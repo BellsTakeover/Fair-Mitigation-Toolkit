@@ -1,0 +1,63 @@
+pipeline: baseline
+random_state: 42
+
+data:
+  target_col: outcome
+  feature_cols: null
+
+  categorical_cols:
+    - sex
+    - race
+    - ethnicity
+    - smoking_status
+
+  derived_features:
+    - name: whr
+      type: expression
+      expr: "waist_circumference / hip_circumference"
+
+    - name: bmi_bin
+      type: bin
+      source: BMI
+      bins: [0, 18.5, 25, 30, 100]
+      labels: ["Underweight", "Normal", "Overweight", "Obese"]
+      one_hot: true
+
+  missing_feature_policy: warn_skip
+
+split:
+  test_size: 0.2
+  stratify: true
+
+model:
+  kind: random_forest
+  params:
+    random_state: 42
+    n_jobs: 1
+
+grid_search:
+  enabled: true
+  cv: 3
+  scoring: accuracy
+  param_grid:
+    n_estimators: [200, 500]
+    max_depth: [null, 20, 40]
+    min_samples_split: [2, 5]
+    max_features: [sqrt, log2]
+
+cross_validation:
+  enabled: true
+  n_splits: 5
+  shuffle: true
+  scoring: accuracy
+
+fairness:
+  enabled: true
+  sensitive_cols:
+    - sex
+    - race
+    - ethnicity
+  positive_label: 1
+
+outputs:
+  save_model: true
