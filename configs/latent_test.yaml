@@ -1,0 +1,43 @@
+pipeline: latent
+random_state: 42
+
+data:
+  target_col: outcome
+  feature_cols: null
+  categorical_cols: null
+  drop_cols: []
+  derived_features: []
+  missing_feature_policy: warn_skip
+
+  latent:
+    enabled: true
+    n_components: 2
+    prefix: Latent
+    categorical_cols: [sex, race, ethnicity]
+    numerical_cols: [age, bmi, waist, hip]
+    mode: original_plus_latent
+    impute_strategy: mean
+    scale: true
+
+split:
+  test_size: 0.2
+  stratify: true
+
+model:
+  kind: random_forest
+  params:
+    n_estimators: 200
+    random_state: 42
+    n_jobs: 1
+
+relabeling:
+  enabled: true
+  confidence_threshold: 0.6
+  auto_replace: true
+
+fairness:
+  enabled: false
+  sensitive_cols: []
+
+outputs:
+  save_model: true

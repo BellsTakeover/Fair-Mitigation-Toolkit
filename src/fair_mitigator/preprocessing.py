@@ -34,28 +34,80 @@ def apply_derived_features(df, derived_features, policy):
     return out
 
 def make_features(df, data_cfg):
-    target = data_cfg["target_col"]
-    y = df[target].astype(int)
+    if data_cfg is None:
+        raise ValueError("Missing 'data:' section in the config file.")
 
-    feature_cols = data_cfg.get("feature_cols")
+    target = data_cfg["target_col"]
+    if target not in df.columns:
+        raise ValueError(f"target_col '{target}' not found in CSV columns.")
+
+    #y should be numeric
+    y = pd.to_numeric(df[target], errors="coerce")
+    if y.isna().any():
+        raise ValueError("Target column has non-numeric values or blanks. Clean the target first.")
+    y = y.astype(int)
+
+    policy = data_cfg.get("missing_feature_policy", "warn_skip")
+
+    #Drop columns if user requests it
+    drop_cols = data_cfg.get("drop_cols", []) or []
+
+    #Decide feature columns
+    feature_cols = data_cfg.get("feature_cols", None)
     if feature_cols is None:
         feature_cols = [c for c in df.columns if c != target]
+    else:
+        # warn/skip missing requested features
+        missing = [c for c in feature_cols if c not in df.columns]
+        if missing:
+            if policy == "error":
+                raise ValueError(f"Missing feature_cols: {missing}")
+            print(f"[WARN] Missing feature_cols (skipping): {missing}")
+        feature_cols = [c for c in feature_cols if c in df.columns and c != target]
+
+    #Apply drop_cols
+    if drop_cols:
+        feature_cols = [c for c in feature_cols if c not in drop_cols]
 
     X = df[feature_cols].copy()
 
+    # Derived features (WHR, BMI bins, etc.)
     X = apply_derived_features(
         X,
         data_cfg.get("derived_features", []),
-        data_cfg.get("missing_feature_policy", "warn_skip")
+        policy
     )
 
-    cat_cols = [c for c in data_cfg.get("categorical_cols", []) if c in X.columns]
-    X = pd.get_dummies(X, columns=cat_cols, drop_first=True)
+    #Decide which columns are categorical
+    cat_cfg = data_cfg.get("categorical_cols", None)
 
-    for c in X.columns:
-        if X[c].dtype == object:
-            X[c] = pd.to_numeric(X[c], errors="coerce")
+    if cat_cfg is None:
+        #auto-detect strings --> make sure it doesn't crash
+        cat_cols = list(X.select_dtypes(include=["object", "string", "category"]).columns)
+    else:
+        #user list: warn/skip missing
+        missing_cats = [c for c in cat_cfg if c not in X.columns]
+        if missing_cats:
+            if policy == "error":
+                raise ValueError(f"Missing categorical_cols: {missing_cats}")
+            print(f"[WARN] Missing categorical_cols (skipping): {missing_cats}")
+        cat_cols = [c for c in cat_cfg if c in X.columns]
 
-    X = X.fillna(X.mean())
+    #One-hot encode ONCE (only if there is something to encode) --> reduce errors
+    if cat_cols:
+        X = pd.get_dummies(X, columns=cat_cols, drop_first=True)
 
-    return X, y
+    #Force numeric and clean NaNs
+    X = X.apply(pd.to_numeric, errors="coerce")
+
+    #Mean-impute numeric columns only
+    num_cols = X.select_dtypes(include=["number"]).columns
+    if len(num_cols) > 0:
+        X[num_cols] = X[num_cols].fillna(X[num_cols].mean())
+
+    #Anything still NaN (all-NaN cols, etc.)
+    X = X.fillna(0)
+
+    df_raw_aligned = df.copy()
+    return X, y, df_raw_aligned
+

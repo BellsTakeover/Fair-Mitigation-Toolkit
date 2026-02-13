@@ -1,0 +1,9 @@
+outcome,age,sex,race,ethnicity,waist_circumference,hip_circumference,BMI
+1,55,Female,White,NotHispanic,90,100,31
+0,22,Male,White,NotHispanic,70,95,22
+1,63,Female,Black,NotHispanic,92,98,34
+0,40,Male,Black,NotHispanic,85,105,27
+1,48,Female,Asian,Hispanic,88,92,29
+0,35,Male,Asian,Hispanic,75,90,23
+1,52,Female,White,Hispanic,95,110,36
+0,29,Male,White,Hispanic,80,100,25

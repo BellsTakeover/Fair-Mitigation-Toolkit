@@ -1,13 +1,20 @@
-pipeline: smote
+pipeline: latent
 random_state: 42
 
 data:
   target_col: outcome
-  feature_cols: null
-  categorical_cols: null
-  drop_cols: []
-  derived_features: []
-  missing_feature_policy: warn_skip
+
+  latent:
+    enabled: true
+    n_components: 2
+    prefix: Latent
+    mode: original_plus_latent
+    impute_strategy: mean
+    scale: true
+    random_state: 42
+
+    categorical_cols: [sex, race, ethnicity]
+    numerical_cols: [age, waist_circumference, hip_circumference, BMI]
 
 split:
   test_size: 0.2
@@ -18,12 +25,6 @@ relabeling:
   confidence_threshold: 0.9
   auto_replace: true
 
-smote:
-  enabled: true
-  sampling_strategy: auto
-  k_neighbors: 5
-  random_state: 42
-
 model:
   kind: random_forest
   params:
@@ -33,7 +34,7 @@ model:
 
 fairness:
   enabled: false
-  sensitive_cols: [] #sens_cols change
+  sensitive_cols: [] #change sens_cols
   positive_label: 1
 
 outputs:

@@ -2,28 +2,13 @@ pipeline: baseline
 random_state: 42
 
 data:
-  target_col: outcome
-  feature_cols: null
-
-  categorical_cols:
-    - sex
-    - race
-    - ethnicity
-    - smoking_status
-
-  derived_features:
-    - name: whr
-      type: expression
-      expr: "waist_circumference / hip_circumference"
-
-    - name: bmi_bin
-      type: bin
-      source: BMI
-      bins: [0, 18.5, 25, 30, 100]
-      labels: ["Underweight", "Normal", "Overweight", "Obese"]
-      one_hot: true
-
+  target_col: outcome #outcome,  generalizes the toolkit
+  feature_cols: null          #null means "use all columns except target"
+  categorical_cols: null      #null means "auto-detect object/string columns"
+  drop_cols: []               # xplicit columns to drop if user wants
+  derived_features: []        #WHR, BMI bins, etc.
   missing_feature_policy: warn_skip
+
 
 split:
   test_size: 0.2
@@ -32,6 +17,8 @@ split:
 model:
   kind: random_forest
   params:
+    n_estimators: 200
+    max_depth: null
     random_state: 42
     n_jobs: 1
 
@@ -51,13 +38,15 @@ cross_validation:
   shuffle: true
   scoring: accuracy
 
-fairness:
+relabeling:
   enabled: true
-  sensitive_cols:
-    - sex
-    - race
-    - ethnicity
+  confidence_threshold: 0.9
+
+fairness:
+  enabled: false #run false when running toy.csv bc it doesn't have sens_cols
+  sensitive_cols: [] #sens_cols change
   positive_label: 1
+
 
 outputs:
   save_model: true

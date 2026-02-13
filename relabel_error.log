@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/workspaces/Multi-level-bias-mitigation-techniques-reproducible-toolkit/src/fair_mitigator/cli.py", line 51, in <module>
+    main()
+  File "/workspaces/Multi-level-bias-mitigation-techniques-reproducible-toolkit/src/fair_mitigator/cli.py", line 35, in main
+    run_baseline(df, cfg, outdir)
+  File "/workspaces/Multi-level-bias-mitigation-techniques-reproducible-toolkit/src/fair_mitigator/pipelines/baseline.py", line 36, in run_baseline
+    rel_res = run_relabeling(X_train, y_train, rel_cfg, outdir=outdir)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspaces/Multi-level-bias-mitigation-techniques-reproducible-toolkit/src/fair_mitigator/mitigations/relabel.py", line 60, in run_relabeling
+    "suspicious": suspicious.values,
+                  ^^^^^^^^^^^^^^^^^
+AttributeError: 'numpy.ndarray' object has no attribute 'values'

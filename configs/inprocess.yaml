@@ -1,0 +1,50 @@
+pipeline: inprocess
+random_state: 42
+
+data:
+  target_col: outcome
+  feature_cols: null
+  categorical_cols: null
+  drop_cols: []
+  derived_features: []
+  missing_feature_policy: warn_skip
+
+split:
+  test_size: 0.2
+  stratify: true
+
+model:
+  kind: random_forest
+  params:
+    n_estimators: 300
+    random_state: 42
+    n_jobs: 1
+
+    # RF regularization knobs (use these instead of "L2")
+    max_depth: 20
+    min_samples_leaf: 5
+    min_samples_split: 10
+    max_features: sqrt
+    ccp_alpha: 0.001
+
+inprocessing:
+  mode: rf_regularized
+
+relabeling:
+  enabled: true
+  confidence_threshold: 0.9
+  auto_replace: true
+
+fairness:
+  enabled: false
+  sensitive_cols: [] #[sex, race, ethnicity] --> sens_cols change
+  positive_label: 1
+
+cross_validation:
+  enabled: true
+  n_splits: 5
+  shuffle: true
+  scoring: accuracy
+
+outputs:
+  save_model: true
