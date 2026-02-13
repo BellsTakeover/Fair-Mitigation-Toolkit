@@ -31,7 +31,7 @@ inprocessing:
   sensitive_col: sex
 
 fairness:
-  enabled: false
+  enabled: true
   sensitive_cols: [sex, race, ethnicity]
   positive_label: 1
 

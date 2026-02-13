@@ -84,18 +84,19 @@ def run_latent(df, cfg, outdir):
 
     save_json(outdir, "metrics.json", results)
 
+    #fairness metric run
     fair_cfg = cfg.get("fairness", {"enabled": False})
     if fair_cfg.get("enabled", False):
         sens_cols = fair_cfg.get("sensitive_cols", [])
+        pos_label = int(fair_cfg.get("positive_label", 1))
+
         fair_df, fair_summary = compute_fairness_report(
             df_raw=df_raw.loc[X_test.index],
             y_true=y_test,
             y_pred=y_pred,
             sensitive_cols=sens_cols,
-            positive_label=int(fair_cfg.get("positive_label", 1)),
+            positive_label=pos_label,
         )
-        save_csv(outdir, "fairness_by_group.csv", fair_df)
-        save_json(outdir, "fairness_summary.json", fair_summary)
 
     cv_cfg = cfg.get("cross_validation", {"enabled": False})
     if cv_cfg.get("enabled", False):

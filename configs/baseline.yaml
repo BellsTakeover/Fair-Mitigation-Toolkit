@@ -43,7 +43,7 @@ relabeling:
   confidence_threshold: 0.9
 
 fairness:
-  enabled: false #run false when running toy.csv bc it doesn't have sens_cols
+  enabled: true #run false when running toy.csv bc it doesn't have sens_cols
   sensitive_cols: [] #sens_cols change
   positive_label: 1
 

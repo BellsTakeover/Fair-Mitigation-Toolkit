@@ -33,7 +33,7 @@ model:
     n_jobs: 1
 
 fairness:
-  enabled: false
+  enabled: true
   sensitive_cols: [] #change sens_cols
   positive_label: 1
 

@@ -36,7 +36,7 @@ relabeling:
   auto_replace: true
 
 fairness:
-  enabled: false
+  enabled: true
   sensitive_cols: []
 
 outputs:

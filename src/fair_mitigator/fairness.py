@@ -1,93 +1,82 @@
-import numpy as np
+from __future__ import annotations
+
+from typing import Dict, List, Tuple
 import pandas as pd
-from sklearn.metrics import accuracy_score, confusion_matrix
-from fairlearn.metrics import MetricFrame, selection_rate
 
-# --- Core rate helpers (binary classification) ---
+from fairlearn.metrics import MetricFrame
+from fairlearn.metrics import (
+    selection_rate,
+    true_positive_rate,
+    false_positive_rate,
+    demographic_parity_difference,
+    equal_opportunity_difference,
+    equalized_odds_difference,
+)
 
-def _safe_div(a, b):
-    return float(a) / float(b) if b else np.nan
 
-def tpr(y_true, y_pred, pos_label=1):
-    # True Positive Rate = TP / (TP + FN)
-    y_true = np.asarray(y_true)
-    y_pred = np.asarray(y_pred)
-    tp = int(((y_true == pos_label) & (y_pred == pos_label)).sum())
-    fn = int(((y_true == pos_label) & (y_pred != pos_label)).sum())
-    return _safe_div(tp, tp + fn)
-
-def fpr(y_true, y_pred, pos_label=1):
-    # False Positive Rate = FP / (FP + TN)
-    y_true = np.asarray(y_true)
-    y_pred = np.asarray(y_pred)
-    fp = int(((y_true != pos_label) & (y_pred == pos_label)).sum())
-    tn = int(((y_true != pos_label) & (y_pred != pos_label)).sum())
-    return _safe_div(fp, fp + tn)
-
-def compute_fairness_report(df_raw, y_true, y_pred, sensitive_cols, positive_label=1):
+def compute_fairness_report(
+    df_raw: pd.DataFrame,
+    y_true,
+    y_pred,
+    sensitive_cols: List[str],
+    positive_label: int = 1,
+) -> Tuple[pd.DataFrame, Dict]:
     """
-    Returns:
-      - fairness_by_group_df: long-form table with per-group metrics for each sensitive feature
-      - fairness_summary: dict with max-min gaps per sensitive feature (researcher-friendly)
-    Metrics:
-      - accuracy
-      - selection_rate (P(ŷ=1))  -> used for Demographic Parity gap
-      - tpr (Equal Opportunity)
-      - fpr (part of Equalized Odds)
+    Fairness metrics on the test set (after mitigations).
+
+    Rules:
+      - sensitive_cols must refer to RAW columns in the CSV (not one-hot).
+      - If a column is missing, warn + skip it.
+      - Always returns (df, summary). They may be empty if nothing usable exists.
     """
+    if not sensitive_cols:
+        return pd.DataFrame(), {}
+
+    # Align series to df_raw index
+    y_true = pd.Series(y_true, index=df_raw.index)
+    y_pred = pd.Series(y_pred, index=df_raw.index)
+
     rows = []
-    summary = {}
-
-    y_true = np.asarray(y_true)
-    y_pred = np.asarray(y_pred)
-
-    metric_fns = {
-        "accuracy": accuracy_score,
-        "selection_rate": selection_rate,  # fairlearn metric: mean(y_pred==1)
-        "tpr": lambda yt, yp: tpr(yt, yp, pos_label=positive_label),
-        "fpr": lambda yt, yp: fpr(yt, yp, pos_label=positive_label),
-    }
+    summary: Dict[str, Dict] = {}
 
     for col in sensitive_cols:
         if col not in df_raw.columns:
+            print(f"[WARN] fairness: '{col}' not found in raw data. Skipping.")
             continue
 
-        sens = df_raw[col].astype("string").fillna("MISSING")
+        A = df_raw[col].copy()
+
+        # If it's entirely missing, skip it
+        if pd.isna(A).all():
+            print(f"[WARN] fairness: '{col}' is all NaN. Skipping.")
+            continue
+
+        # Keep it simple and stable
+        A = A.astype("string").fillna("MISSING")
 
         mf = MetricFrame(
-            metrics=metric_fns,
+            metrics={
+                "selection_rate": selection_rate,
+                "tpr": true_positive_rate,
+                "fpr": false_positive_rate,
+            },
             y_true=y_true,
             y_pred=y_pred,
-            sensitive_features=sens
+            sensitive_features=A,
         )
 
-        # Per-group table
         by_group = mf.by_group.reset_index().rename(columns={"index": "group"})
-        by_group.insert(0, "sensitive_feature", col)
+        by_group.insert(0, "sensitive_col", col)
         rows.append(by_group)
 
-        # Researcher summary: gaps (max-min) ignoring NaNs
-        gaps = {}
-        for m in ["accuracy", "selection_rate", "tpr", "fpr"]:
-            s = mf.by_group[m].astype(float)
-            s = s[~s.isna()]
-            gaps[m + "_gap"] = float(s.max() - s.min()) if len(s) else np.nan
-
         summary[col] = {
-            "demographic_parity_gap": gaps["selection_rate_gap"],
-            "equal_opportunity_gap": gaps["tpr_gap"],
-            "equalized_odds_gaps": {
-                "tpr_gap": gaps["tpr_gap"],
-                "fpr_gap": gaps["fpr_gap"],
-            },
-            "accuracy_gap": gaps["accuracy_gap"],
+            "demographic_parity_difference": float(demographic_parity_difference(y_true, y_pred, sensitive_features=A)),
+            "equal_opportunity_difference": float(equal_opportunity_difference(y_true, y_pred, sensitive_features=A)),
+            "equalized_odds_difference": float(equalized_odds_difference(y_true, y_pred, sensitive_features=A)),
         }
 
-    if rows:
-        fairness_by_group_df = pd.concat(rows, ignore_index=True)
-    else:
-        fairness_by_group_df = pd.DataFrame(
-            columns=["sensitive_feature", "group", "accuracy", "selection_rate", "tpr", "fpr"]
-        )
+    if not rows:
+        return pd.DataFrame(), {}
 
-    return fairness_by_group_df, summary
+    fairness_df = pd.concat(rows, axis=0, ignore_index=True)
+    return fairness_df, summary

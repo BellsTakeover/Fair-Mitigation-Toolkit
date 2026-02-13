@@ -30,7 +30,7 @@ relabeling:
   enabled: false
 
 fairness:
-  enabled: false
+  enabled: true
   sensitive_cols: []
 
 outputs:

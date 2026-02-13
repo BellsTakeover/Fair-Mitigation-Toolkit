@@ -32,7 +32,7 @@ model:
     n_jobs: 1
 
 fairness:
-  enabled: false
+  enabled: true
   sensitive_cols: []
 
 outputs:

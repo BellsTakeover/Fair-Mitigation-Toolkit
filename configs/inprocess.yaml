@@ -36,7 +36,7 @@ relabeling:
   auto_replace: true
 
 fairness:
-  enabled: false
+  enabled: true
   sensitive_cols: [] #[sex, race, ethnicity] --> sens_cols change
   positive_label: 1
 
