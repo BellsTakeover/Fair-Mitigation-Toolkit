@@ -210,14 +210,13 @@ NOTES
 
 - Latent variables are fit on training data only.
 
-- Fairness metrics are evaluated on the untouched test set.
+- Fairness metrics are evaluated on the untouched test set and changed test set.
 
 ------------------------------------------------------------
 
 AUTHOR
 
 ------------------------------------------------------------
-
-Isabella MG
+Isabella Mixton-Garcia
 
 Multi-Level Bias Mitigation Reproducible Toolkit
