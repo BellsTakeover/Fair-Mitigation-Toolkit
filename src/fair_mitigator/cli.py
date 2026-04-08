@@ -10,6 +10,8 @@ from fair_mitigator.pipelines.relabel import run_relabel
 from fair_mitigator.pipelines.smote import run_smote
 from fair_mitigator.pipelines.latent import run_latent
 from fair_mitigator.pipelines.inprocess import run_inprocess
+from fair_mitigator.pipelines.all import run_all
+
 
 
 def main():
@@ -17,7 +19,7 @@ def main():
     parser.add_argument(
         "--pipeline",
         required=True,
-        choices=["baseline", "relabel", "smote", "latent", "inprocess"],
+        choices=["baseline", "relabel", "smote", "latent", "inprocess", "all"],
         help="Which bias-mitigation pipeline to run"
     )
 
@@ -41,6 +43,8 @@ def main():
         run_latent(df, cfg, outdir)
     elif args.pipeline == "inprocess":
         run_inprocess(df, cfg, outdir)
+    elif args.pipeline == "all":
+        run_all(df, cfg, outdir)
     else:
         raise ValueError(f"Unknown pipeline: {args.pipeline}")
 

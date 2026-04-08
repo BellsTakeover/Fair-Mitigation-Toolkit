@@ -7,7 +7,8 @@ from fair_mitigator.metrics import evaluate
 from fair_mitigator.io import save_json, save_csv
 from fair_mitigator.preprocessing import make_features
 from fair_mitigator.models import make_model, run_grid_search
-from fair_mitigator.fairness import compute_fairness_report
+from fair_mitigator.fairness import compute_fairness_report, save_fairness_plots
+
 
 #OPTIONAL: preprocessing mitigation if wanting to do pre- + in-
 from fair_mitigator.mitigations.relabel import run_relabeling
@@ -73,7 +74,7 @@ def run_baseline(df, cfg, outdir):
 
     save_json(outdir, "metrics.json", metrics)
 
-    # Fairness report (after)
+    #Fairness report (after)
     fair_cfg = cfg.get("fairness", {"enabled": False})
     if fair_cfg.get("enabled", False):
         sens_cols = fair_cfg.get("sensitive_cols", [])
@@ -87,9 +88,18 @@ def run_baseline(df, cfg, outdir):
             positive_label=pos_label,
         )
 
+        #If nothing was computed, don't write tiny empty files --> reduce error
+        if fair_df is None or fair_df.empty or not fair_summary:
+            print(
+                "[WARN] Fairness enabled, but no fairness results were produced. "
+                "Check that fairness.sensitive_cols match RAW column names in your CSV."
+            )
+        else:
+            save_csv(outdir, "fairness_by_group.csv", fair_df)
+            save_json(outdir, "fairness_summary.json", fair_summary)
+            save_fairness_plots(fair_df, outdir)
 
-        save_csv(outdir, "fairness_by_group.csv", fair_df)
-        save_json(outdir, "fairness_summary.json", fair_summary)
+
 
     #Save model
     if cfg.get("outputs", {}).get("save_model", True):

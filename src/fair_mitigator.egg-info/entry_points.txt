@@ -1,0 +1,2 @@
+[console_scripts]
+fair-mitigator = fair_mitigator.cli:main

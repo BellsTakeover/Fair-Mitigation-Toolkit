@@ -7,7 +7,7 @@ from ..io import save_json, save_csv
 from ..metrics import evaluate, cross_validate
 from ..models import make_model
 from ..preprocessing import make_features
-from ..fairness import compute_fairness_report
+from fair_mitigator.fairness import compute_fairness_report, save_fairness_plots
 from ..mitigations.relabel import run_relabeling
 from ..mitigations.latent import fit_transform_latent
 
@@ -97,6 +97,7 @@ def run_latent(df, cfg, outdir):
             sensitive_cols=sens_cols,
             positive_label=pos_label,
         )
+        save_fairness_plots(fair_df, outdir)
 
     cv_cfg = cfg.get("cross_validation", {"enabled": False})
     if cv_cfg.get("enabled", False):

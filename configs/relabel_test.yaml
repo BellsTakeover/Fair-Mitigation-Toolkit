@@ -25,8 +25,8 @@ grid_search:
 
 relabeling:
   enabled: true
-  confidence_threshold: 0.6
-  auto_replace: true
+  confidence_threshold: 0.85 ## during testing= 0.85; after testing = 0.98
+  max_flip_fraction: 0.02  #makes sure it doesn't flip too many variables 
 
 fairness:
   enabled: true

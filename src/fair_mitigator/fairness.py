@@ -1,82 +1,129 @@
 from __future__ import annotations
 
-from typing import Dict, List, Tuple
-import pandas as pd
+import json
+from pathlib import Path
 
-from fairlearn.metrics import MetricFrame
+import matplotlib.pyplot as plt
+import pandas as pd
 from fairlearn.metrics import (
-    selection_rate,
-    true_positive_rate,
-    false_positive_rate,
+    MetricFrame,
     demographic_parity_difference,
-    equal_opportunity_difference,
     equalized_odds_difference,
+    true_positive_rate,
 )
+
+
+def save_json(path: Path, obj: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(obj, f, indent=2)
 
 
 def compute_fairness_report(
     df_raw: pd.DataFrame,
     y_true,
     y_pred,
-    sensitive_cols: List[str],
+    sensitive_cols: list[str],
     positive_label: int = 1,
-) -> Tuple[pd.DataFrame, Dict]:
+):
     """
-    Fairness metrics on the test set (after mitigations).
+    Returns:
+      fair_df: per-group fairness table
+      fair_summary: summary dict by sensitive attribute
 
-    Rules:
-      - sensitive_cols must refer to RAW columns in the CSV (not one-hot).
-      - If a column is missing, warn + skip it.
-      - Always returns (df, summary). They may be empty if nothing usable exists.
+    fair_summary structure:
+    {
+      "sex": {
+        "demographic_parity_difference": 0.12,
+        "equal_opportunity_difference": 0.08,
+        "equalized_odds_difference": 0.10
+      },
+      ...
+    }
     """
-    if not sensitive_cols:
-        return pd.DataFrame(), {}
-
-    # Align series to df_raw index
-    y_true = pd.Series(y_true, index=df_raw.index)
-    y_pred = pd.Series(y_pred, index=df_raw.index)
-
-    rows = []
-    summary: Dict[str, Dict] = {}
+    fair_rows = []
+    per_attr = {}
 
     for col in sensitive_cols:
         if col not in df_raw.columns:
-            print(f"[WARN] fairness: '{col}' not found in raw data. Skipping.")
             continue
 
-        A = df_raw[col].copy()
+        s = df_raw[col]
 
-        # If it's entirely missing, skip it
-        if pd.isna(A).all():
-            print(f"[WARN] fairness: '{col}' is all NaN. Skipping.")
-            continue
-
-        # Keep it simple and stable
-        A = A.astype("string").fillna("MISSING")
-
+        # Per-group summaries
         mf = MetricFrame(
-            metrics={
-                "selection_rate": selection_rate,
-                "tpr": true_positive_rate,
-                "fpr": false_positive_rate,
-            },
+            metrics={"tpr": true_positive_rate},
             y_true=y_true,
             y_pred=y_pred,
-            sensitive_features=A,
+            sensitive_features=s,
         )
 
-        by_group = mf.by_group.reset_index().rename(columns={"index": "group"})
-        by_group.insert(0, "sensitive_col", col)
-        rows.append(by_group)
+        by_group = mf.by_group
 
-        summary[col] = {
-            "demographic_parity_difference": float(demographic_parity_difference(y_true, y_pred, sensitive_features=A)),
-            "equal_opportunity_difference": float(equal_opportunity_difference(y_true, y_pred, sensitive_features=A)),
-            "equalized_odds_difference": float(equalized_odds_difference(y_true, y_pred, sensitive_features=A)),
+        for group_name, row in by_group.iterrows():
+            fair_rows.append(
+                {
+                    "sensitive_attribute": col,
+                    "group": str(group_name),
+                    "true_positive_rate": float(row["tpr"]),
+                }
+            )
+
+        # Group disparity summaries
+        dp_diff = demographic_parity_difference(
+            y_true=y_true,
+            y_pred=y_pred,
+            sensitive_features=s,
+        )
+        eo_diff = MetricFrame(
+            metrics=true_positive_rate,
+            y_true=y_true,
+            y_pred=y_pred,
+            sensitive_features=s,
+        ).difference(method="between_groups")
+        eod_diff = equalized_odds_difference(
+            y_true=y_true,
+            y_pred=y_pred,
+            sensitive_features=s,
+        )
+
+        per_attr[col] = {
+            "demographic_parity_difference": float(dp_diff),
+            "equal_opportunity_difference": float(eo_diff),
+            "equalized_odds_difference": float(eod_diff),
         }
 
-    if not rows:
-        return pd.DataFrame(), {}
+    fair_df = pd.DataFrame(fair_rows)
+    return fair_df, per_attr
 
-    fairness_df = pd.concat(rows, axis=0, ignore_index=True)
-    return fairness_df, summary
+
+def save_fairness_plots(fair_df: pd.DataFrame, outdir: Path) -> None:
+    """
+    Saves simple TPR-by-group bar plots for each sensitive attribute.
+    """
+    outdir.mkdir(parents=True, exist_ok=True)
+
+    if fair_df.empty:
+        return
+
+    for attr in fair_df["sensitive_attribute"].dropna().unique():
+        sub = fair_df[fair_df["sensitive_attribute"] == attr].copy()
+        if sub.empty:
+            continue
+
+        plt.figure(figsize=(8, 4))
+        plt.bar(sub["group"].astype(str), sub["true_positive_rate"])
+        plt.xlabel("Group")
+        plt.ylabel("True Positive Rate")
+        plt.title(f"Fairness by group: {attr}")
+        plt.tight_layout()
+        plt.savefig(outdir / f"fairness_{attr}.png", dpi=150)
+        plt.close()
+
+
+def save_fairness_outputs(fair_df: pd.DataFrame, fair_summary: dict, outdir: Path) -> None:
+    outdir.mkdir(parents=True, exist_ok=True)
+
+    fair_df.to_csv(outdir / "fairness_by_group.csv", index=False)
+    save_json(outdir / "fairness_summary.json", fair_summary)
+    save_fairness_plots(fair_df, outdir)

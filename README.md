@@ -197,6 +197,33 @@ This includes:
 - Cross-validation settings
 
 No dataset-specific logic is hardcoded.
+------------------------------------------------------------
+
+Example Run
+
+------------------------------------------------------------
+##One function
+
+Create and activate a virtual environment, then install this repo:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -U pip
+python -m pip install -e .
+
+Run Toolkit from Python
+
+from fair_mitigator import run_toolkit
+
+outdir = run_toolkit(
+    pipeline="all",
+    data_path="toy_imbalanced.csv",
+    config_path="configs/all_toy.yaml",
+)
+
+print("Wrote outputs to:", outdir)
+
 
 ------------------------------------------------------------
 

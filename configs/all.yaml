@@ -1,0 +1,167 @@
+# Runs everything in one command:
+#   fair-mitigator --pipeline all --data toy_imbalanced.csv --config configs/all_toy.yaml
+
+baseline:
+  pipeline: baseline
+  random_state: 42
+  data:
+    target_col: outcome
+    feature_cols: null
+    categorical_cols: null
+    drop_cols: []
+    derived_features: []
+    missing_feature_policy: warn_skip
+  split:
+    test_size: 0.2
+    stratify: true
+  model:
+    kind: random_forest
+    params:
+      n_estimators: 200
+      random_state: 42
+      n_jobs: 1
+  grid_search:
+    enabled: false
+  relabeling:
+    enabled: false
+  fairness:
+    enabled: true
+    sensitive_cols: [sex, race, ethnicity]
+    positive_label: 1
+  outputs:
+    save_model: true
+
+relabel:
+  pipeline: baseline
+  random_state: 42
+  data:
+    target_col: outcome
+    feature_cols: null
+    categorical_cols: null
+    drop_cols: []
+    derived_features: []
+    missing_feature_policy: warn_skip
+  split:
+    test_size: 0.2
+    stratify: true
+  model:
+    kind: random_forest
+    params:
+      n_estimators: 200
+      random_state: 42
+      n_jobs: 1
+  grid_search:
+    enabled: false
+  relabeling:
+    enabled: true
+    confidence_threshold: 0.6
+    auto_replace: true
+  fairness:
+    enabled: true
+    sensitive_cols: []
+    positive_label: 1
+  outputs:
+    save_model: true
+
+smote:
+  pipeline: smote
+  random_state: 42
+  data:
+    target_col: outcome
+    feature_cols: null
+    categorical_cols: null
+    drop_cols: []
+    derived_features: []
+    missing_feature_policy: warn_skip
+  split:
+    test_size: 0.2
+    stratify: true
+  relabeling:
+    enabled: true
+    confidence_threshold: 0.6
+    auto_replace: true
+  smote:
+    enabled: true
+    sampling_strategy: auto
+    k_neighbors: 5
+    random_state: 42
+  model:
+    kind: random_forest
+    params:
+      n_estimators: 300
+      random_state: 42
+      n_jobs: 1
+  fairness:
+    enabled: true
+    sensitive_cols: []
+    positive_label: 1
+  outputs:
+    save_model: true
+
+latent:
+  pipeline: latent
+  random_state: 42
+  data:
+    target_col: outcome
+    latent:
+      enabled: true
+      n_components: 2
+      prefix: Latent
+      categorical_cols: []
+      numerical_cols: []
+      mode: original_plus_latent
+      impute_strategy: mean
+      scale: true
+  split:
+    test_size: 0.2
+    stratify: true
+  relabeling:
+    enabled: true
+    confidence_threshold: 0.6
+    auto_replace: true
+  model:
+    kind: random_forest
+    params:
+      n_estimators: 200
+      random_state: 42
+      n_jobs: 1
+  fairness:
+    enabled: true
+    sensitive_cols: []
+    positive_label: 1
+  outputs:
+    save_model: true
+
+rf_regularized:
+  pipeline: baseline
+  random_state: 42
+  data:
+    target_col: outcome
+    feature_cols: null
+    categorical_cols: null
+    drop_cols: []
+    derived_features: []
+    missing_feature_policy: warn_skip
+  split:
+    test_size: 0.2
+    stratify: true
+  model:
+    kind: random_forest
+    params:
+      n_estimators: 400
+      random_state: 42
+      n_jobs: 1
+      max_depth: 10
+      min_samples_split: 10
+      min_samples_leaf: 5
+      max_features: sqrt
+  grid_search:
+    enabled: false
+  relabeling:
+    enabled: false
+  fairness:
+    enabled: true
+    sensitive_cols: []
+    positive_label: 1
+  outputs:
+    save_model: true

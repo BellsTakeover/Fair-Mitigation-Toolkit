@@ -1,5 +1,16 @@
 Metadata-Version: 2.4
-Name: fair_mitigator
-Version: 0.0.0
+Name: fair-mitigator
+Version: 0.1.0
+Summary: Reproducible bias mitigation toolkit (RF-based)
+Author: Isabella MG
+Requires-Python: >=3.10
 License-File: LICENSE
+Requires-Dist: numpy>=1.24
+Requires-Dist: pandas>=2.0
+Requires-Dist: scikit-learn>=1.3
+Requires-Dist: imbalanced-learn>=0.11
+Requires-Dist: fairlearn>=0.9
+Requires-Dist: joblib>=1.3
+Requires-Dist: PyYAML>=6.0
+Requires-Dist: matplotlib>=3.7
 Dynamic: license-file

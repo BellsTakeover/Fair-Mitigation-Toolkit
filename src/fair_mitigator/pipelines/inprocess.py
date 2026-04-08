@@ -9,7 +9,7 @@ from ..io import save_csv, save_json
 from ..metrics import evaluate, cross_validate
 from ..models import make_model
 from ..preprocessing import make_features
-from ..fairness import compute_fairness_report
+from fair_mitigator.fairness import compute_fairness_report, save_fairness_plots
 from ..mitigations.relabel import run_relabeling
 
 
@@ -110,6 +110,7 @@ def run_inprocess(df, cfg, outdir):
         )
         save_csv(outdir, "fairness_by_group.csv", fair_df)
         save_json(outdir, "fairness_summary.json", fair_summary)
+        save_fairness_plots(fair_df, outdir)
 
     # Cross-validation (kept simple: CV only for rf_regularized mode)
     cv_cfg = cfg.get("cross_validation", {"enabled": False})

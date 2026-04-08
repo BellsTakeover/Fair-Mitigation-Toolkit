@@ -32,7 +32,7 @@ inprocessing:
 
 fairness:
   enabled: true
-  sensitive_cols: [sex, race, ethnicity]
+  sensitive_cols: []
   positive_label: 1
 
 outputs:

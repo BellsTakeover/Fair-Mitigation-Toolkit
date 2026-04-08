@@ -1,0 +1,6 @@
+name,file,rows,cols,positive_rate,notes
+no_disparity,no_disparity.csv,3000,8,0.5,Control dataset: should already be fair.
+class_imbalance_smote,class_imbalance_smote.csv,3000,8,0.15466666666666667,Designed to validate SMOTE on mostly global class imbalance.
+label_noise_relabel,label_noise_relabel.csv,3000,8,0.5003333333333333,Designed to validate relabeling on boundary label noise.
+latent_disparity,latent_disparity.csv,3000,11,0.23633333333333334,Designed to validate latent mitigation with hidden structure plus proxies.
+eo_targeted,eo_targeted.csv,3000,8,0.3016666666666667,Designed to validate in-process equalized odds on group-specific error behavior.
